@@ -1,0 +1,213 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ══════════════ ROLLAR ══════════════
+enum Role {
+  TEAM_ADMIN
+  SUPER_ADMIN
+  ADMIN
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  PROPOSAL
+  WON
+  LOST
+}
+
+// ══════════════ FOYDALANUVCHI ══════════════
+model User {
+  id             String   @id @default(cuid())
+  login          String   @unique
+  password       String
+  name           String
+  role           Role
+  telegramChatId String?
+  notifyNewLead  Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Bog'lanishlar
+  sites                  UserSite[]
+  sentNotifications      Notification[] @relation("sender")
+  receivedNotifications  Notification[] @relation("receiver")
+  activityLogs           ActivityLog[]
+  assignedLeads          Lead[]         @relation("assignedLeads")
+  createdByUsers         User[]         @relation("createdBy")
+  createdBy              User?          @relation("createdBy", fields: [createdById], references: [id])
+  createdById            String?
+}
+
+// ══════════════ SAYT ══════════════
+model Site {
+  id            String   @id @default(cuid())
+  domain        String   @unique
+  name          String
+  isActive      Boolean  @default(true)
+  lowPowerMode  Boolean  @default(false)
+  metaPixelId   String?
+  yandexId      String?
+  googleAdsTag  String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Bog'lanishlar
+  users          UserSite[]
+  leads          Lead[]
+  formFields     FormField[]
+  contents       SiteContent[]
+  generatedLinks GeneratedLink[]
+}
+
+// ══════════════ USER <-> SITE (KO'P-KO'PGA) ══════════════
+model UserSite {
+  id     String @id @default(cuid())
+  userId String
+  siteId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site   Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, siteId])
+  @@index([userId])
+  @@index([siteId])
+}
+
+// ══════════════ LEAD ══════════════
+model Lead {
+  id          String     @id @default(cuid())
+  siteId      String
+  site        Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  name        String
+  phone       String
+  goal        String?
+  revenue     String?
+  status      LeadStatus @default(NEW)
+  source      String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  assignedId  String?
+  assignedTo  User?      @relation("assignedLeads", fields: [assignedId], references: [id], onDelete: SetNull)
+  notes       String?
+  extraData   Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@index([siteId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ══════════════ FORMA MAYDONLARI ══════════════
+model FormField {
+  id       String  @id @default(cuid())
+  siteId   String
+  site     Site    @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  label    String
+  type     String  @default("text")
+  required Boolean @default(false)
+  options  String?
+  order    Int     @default(0)
+  isActive Boolean @default(true)
+
+  @@index([siteId])
+}
+
+// ══════════════ SAYT YOZUVLARI ══════════════
+model SiteContent {
+  id        String   @id @default(cuid())
+  siteId    String
+  site      Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  updatedAt DateTime @updatedAt
+
+  @@unique([siteId, key])
+  @@index([siteId])
+}
+
+// ══════════════ HABARNOMALAR ══════════════
+model Notification {
+  id         String   @id @default(cuid())
+  type       String   @default("SYSTEM")
+  title      String
+  message    String   @default("")
+  isRead     Boolean  @default(false)
+  senderId   String?
+  sender     User?    @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiverId String?
+  receiver   User?    @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  siteId     String?
+  leadId     String?
+  createdAt  DateTime @default(now())
+
+  @@index([receiverId, isRead])
+  @@index([createdAt])
+}
+
+// ══════════════ FAOLIYAT JURNALI ══════════════
+model ActivityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  action    String
+  details   String?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ══════════════ BOT SESSIYA ══════════════
+model BotSession {
+  id             String   @id @default(cuid())
+  telegramChatId String   @unique
+  userId         String?
+  state          String   @default("idle")
+  tempLogin      String?
+  activeSiteId   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+// ══════════════ TIZIM SOZLAMALARI ══════════════
+model SystemSettings {
+  id                   String   @id @default("default")
+  rateLimitEnabled     Boolean  @default(true)
+  rateLimitMax         Int      @default(10)
+  bruteForceEnabled    Boolean  @default(true)
+  bruteForceMax        Int      @default(5)
+  bruteForceBlock      Int      @default(15)
+  corsStrictMode       Boolean  @default(false)
+  corsAllowedOrigins   String   @default("")
+  inputSanitization    Boolean  @default(true)
+  auditLogExpanded     Boolean  @default(true)
+  updatedAt            DateTime @updatedAt
+}
+
+// ══════════════ YARATILGAN LINKLAR ══════════════
+model GeneratedLink {
+  id         String   @id @default(cuid())
+  siteId     String
+  site       Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  url        String
+  source     String
+  medium     String?
+  campaign   String?
+  lowPower   Boolean  @default(false)
+  clicks     Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([siteId])
+  @@index([createdAt])
+}
