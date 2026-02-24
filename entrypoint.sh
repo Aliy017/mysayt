@@ -1,5 +1,4 @@
 #!/bin/sh
-set -e
 
 echo "🔄 Waiting for database to be ready..."
 for i in $(seq 1 10); do
@@ -15,11 +14,8 @@ for i in $(seq 1 10); do
   sleep 3
 done
 
-echo "🔄 Running Prisma db push..."
-node ./node_modules/prisma/build/index.js db push --accept-data-loss 2>&1 || echo "⚠️ db push completed with warnings"
-
 echo "🌱 Running database seed..."
-node prisma/compiled/seed.js 2>&1 || echo "⚠️ seed completed (already seeded or minor error)"
+node prisma/compiled/seed.js 2>&1 && echo "✅ Seed muvaffaqiyatli!" || echo "⚠️ Seed xatolik (ehtimol allaqachon seeded)"
 
-echo "✅ Starting Next.js server..."
+echo "🚀 Starting Next.js server..."
 exec node server.js

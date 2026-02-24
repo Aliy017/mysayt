@@ -39,16 +39,13 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema + client (needed for runtime and seed)
+# Copy Prisma client (needed for runtime + seed)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 # Copy bcryptjs (needed for seed script)
 COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
-
-# Copy Prisma CLI (needed for db push at startup)
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 # Copy entrypoint script
 COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
