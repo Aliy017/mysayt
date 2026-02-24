@@ -20,9 +20,8 @@ COPY . .
 
 RUN npm run build
 
-# Run prisma db push + seed during build (DATABASE_URL from Coolify buildtime env)
-# Uses upsert, safe to re-run on every deploy
-RUN npx prisma db push --skip-generate && npx prisma db seed
+# Compile seed script to JS (so we don't need ts-node at runtime)
+RUN npx tsc prisma/seed.ts --outDir prisma/compiled --esModuleInterop --module commonjs --skipLibCheck
 
 # Production image
 FROM base AS runner
@@ -40,10 +39,16 @@ COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
-# Copy Prisma schema (needed for runtime)
+# Copy Prisma schema + client (needed for runtime and seed)
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy bcryptjs (needed for seed script)
+COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
+
+# Copy entrypoint script
+COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
 
 USER nextjs
 
@@ -51,4 +56,4 @@ EXPOSE 3001
 ENV PORT=3001
 ENV HOSTNAME="0.0.0.0"
 
-CMD ["node", "server.js"]
+CMD ["sh", "entrypoint.sh"]
