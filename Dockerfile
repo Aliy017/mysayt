@@ -47,6 +47,9 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 # Copy bcryptjs (needed for seed script)
 COPY --from=builder /app/node_modules/bcryptjs ./node_modules/bcryptjs
 
+# Copy Prisma CLI (needed for db push at startup)
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
+
 # Copy entrypoint script
 COPY --from=builder /app/entrypoint.sh ./entrypoint.sh
 
