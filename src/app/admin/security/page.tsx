@@ -28,6 +28,11 @@ export default function SecurityPage() {
     const [saving, setSaving] = useState<string | null>(null);
     const [corsInput, setCorsInput] = useState("");
 
+    // String states for number inputs — allows free typing, validates on blur
+    const [rateLimitInput, setRateLimitInput] = useState("");
+    const [bruteForceMaxInput, setBruteForceMaxInput] = useState("");
+    const [bruteForceBlockInput, setBruteForceBlockInput] = useState("");
+
     const fetchSettings = useCallback(async () => {
         try {
             const res = await fetch("/api/settings/security");
@@ -35,6 +40,9 @@ export default function SecurityPage() {
                 const data = await res.json();
                 setSettings(data);
                 setCorsInput(data.corsAllowedOrigins || "");
+                setRateLimitInput(String(data.rateLimitMax ?? ""));
+                setBruteForceMaxInput(String(data.bruteForceMax ?? ""));
+                setBruteForceBlockInput(String(data.bruteForceBlock ?? ""));
             }
         } catch { /* xato */ }
         setLoading(false);
@@ -140,15 +148,19 @@ export default function SecurityPage() {
                             type="number"
                             min={1}
                             max={1000}
-                            value={settings.rateLimitMax}
+                            value={rateLimitInput}
                             style={inputStyle}
-                            onChange={(e) => {
-                                const v = parseInt(e.target.value);
-                                if (v >= 1 && v <= 1000) {
+                            onChange={(e) => setRateLimitInput(e.target.value)}
+                            onBlur={() => {
+                                const v = parseInt(rateLimitInput);
+                                if (!isNaN(v) && v >= 1 && v <= 1000) {
                                     setSettings({ ...settings, rateLimitMax: v });
+                                    setRateLimitInput(String(v));
+                                    updateSetting("rateLimitMax", v);
+                                } else {
+                                    setRateLimitInput(String(settings.rateLimitMax));
                                 }
                             }}
-                            onBlur={() => updateSetting("rateLimitMax", settings.rateLimitMax)}
                         />
                     </div>
                     <div style={{
@@ -184,26 +196,38 @@ export default function SecurityPage() {
                             <span style={{ fontSize: 13, color: "var(--muted)", minWidth: 120 }}>Max urinish:</span>
                             <input
                                 type="number" min={1} max={100}
-                                value={settings.bruteForceMax}
+                                value={bruteForceMaxInput}
                                 style={inputStyle}
-                                onChange={(e) => {
-                                    const v = parseInt(e.target.value);
-                                    if (v >= 1) setSettings({ ...settings, bruteForceMax: v });
+                                onChange={(e) => setBruteForceMaxInput(e.target.value)}
+                                onBlur={() => {
+                                    const v = parseInt(bruteForceMaxInput);
+                                    if (!isNaN(v) && v >= 1 && v <= 100) {
+                                        setSettings({ ...settings, bruteForceMax: v });
+                                        setBruteForceMaxInput(String(v));
+                                        updateSetting("bruteForceMax", v);
+                                    } else {
+                                        setBruteForceMaxInput(String(settings.bruteForceMax));
+                                    }
                                 }}
-                                onBlur={() => updateSetting("bruteForceMax", settings.bruteForceMax)}
                             />
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                             <span style={{ fontSize: 13, color: "var(--muted)", minWidth: 120 }}>Blok (daqiqa):</span>
                             <input
                                 type="number" min={1} max={1440}
-                                value={settings.bruteForceBlock}
+                                value={bruteForceBlockInput}
                                 style={inputStyle}
-                                onChange={(e) => {
-                                    const v = parseInt(e.target.value);
-                                    if (v >= 1) setSettings({ ...settings, bruteForceBlock: v });
+                                onChange={(e) => setBruteForceBlockInput(e.target.value)}
+                                onBlur={() => {
+                                    const v = parseInt(bruteForceBlockInput);
+                                    if (!isNaN(v) && v >= 1 && v <= 1440) {
+                                        setSettings({ ...settings, bruteForceBlock: v });
+                                        setBruteForceBlockInput(String(v));
+                                        updateSetting("bruteForceBlock", v);
+                                    } else {
+                                        setBruteForceBlockInput(String(settings.bruteForceBlock));
+                                    }
                                 }}
-                                onBlur={() => updateSetting("bruteForceBlock", settings.bruteForceBlock)}
                             />
                         </div>
                     </div>
