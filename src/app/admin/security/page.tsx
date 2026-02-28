@@ -1,8 +1,54 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { redirect } from "next/navigation";
+
+/* ── Tooltip — so'roq belgisi bosilganda tushuntirish ko'rsatadi ── */
+function InfoTooltip({ text }: { text: string }) {
+    const [open, setOpen] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!open) return;
+        const handler = (e: MouseEvent) => {
+            if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, [open]);
+
+    return (
+        <div ref={ref} style={{ position: "relative", display: "inline-block", marginLeft: 6 }}>
+            <button
+                onClick={() => setOpen(!open)}
+                style={{
+                    width: 20, height: 20, borderRadius: "50%",
+                    background: open ? "rgba(99,102,241,0.2)" : "rgba(255,255,255,0.06)",
+                    border: open ? "1px solid rgba(99,102,241,0.4)" : "1px solid rgba(255,255,255,0.1)",
+                    color: open ? "#818cf8" : "var(--muted)",
+                    fontSize: 11, fontWeight: 700, cursor: "pointer",
+                    display: "inline-flex", alignItems: "center", justifyContent: "center",
+                    transition: "all 0.2s", lineHeight: 1, padding: 0,
+                }}
+            >
+                ?
+            </button>
+            {open && (
+                <div style={{
+                    position: "absolute", top: 28, left: "50%", transform: "translateX(-50%)",
+                    background: "#1a1a2e", border: "1px solid rgba(99,102,241,0.2)",
+                    borderRadius: 12, padding: "14px 16px", width: 280,
+                    fontSize: 13, lineHeight: 1.6, color: "#c8c8d8",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.4)", zIndex: 50,
+                    animation: "fadeIn 0.2s",
+                }}>
+                    {text}
+                </div>
+            )}
+        </div>
+    );
+}
 
 interface SecuritySettings {
     rateLimitEnabled: boolean;
@@ -129,8 +175,9 @@ export default function SecurityPage() {
                 <div style={cardStyle}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                         <div>
-                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4, display: "flex", alignItems: "center" }}>
                                 🚦 Rate Limiting
+                                <InfoTooltip text="Bitta IP manzildan qancha so'rov yuborilishini cheklaydi. Masalan, 1 daqiqada 30 ta so'rov. Bu saytga bot yoki dastur orqali ming-minglab ariza spamini oldini oladi. Oddiy foydalanuvchilarga ta'sir qilmaydi." />
                             </h3>
                             <p style={labelStyle}>Ariza spam hujumidan himoya</p>
                         </div>
@@ -178,8 +225,9 @@ export default function SecurityPage() {
                 <div style={cardStyle}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                         <div>
-                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4, display: "flex", alignItems: "center" }}>
                                 🔐 Brute Force Himoya
+                                <InfoTooltip text="Noto'g'ri parol bilan kirish urinishlarini cheklaydi. Masalan, 5 marta noto'g'ri parol kiritilsa — shu IP 15 daqiqaga bloklanadi. Bu hackerlarni parolni taxmin qilishga urinishini to'xtatadi." />
                             </h3>
                             <p style={labelStyle}>Login urinishlarini cheklash</p>
                         </div>
@@ -246,8 +294,9 @@ export default function SecurityPage() {
                 <div style={cardStyle}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                         <div>
-                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4, display: "flex", alignItems: "center" }}>
                                 🌐 CORS Cheklash
+                                <InfoTooltip text="Faqat sizning saytingiz (masalan, mysayt.uz) dan kelgan so'rovlarni qabul qiladi. Boshqa saytlar sizning API ga so'rov yubora olmaydi. Bu tashqi saytlardan sizning ma'lumotlaringizni o'g'irlashni oldini oladi." />
                             </h3>
                             <p style={labelStyle}>Faqat ruxsat etilgan domenlardan ariza qabul</p>
                         </div>
@@ -289,8 +338,9 @@ export default function SecurityPage() {
                 <div style={cardStyle}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16 }}>
                         <div>
-                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4, display: "flex", alignItems: "center" }}>
                                 🧹 XSS Tozalash
+                                <InfoTooltip text="Foydalanuvchilar forma to'ldirganda yoki matn yozganda, zararli JavaScript kodlarni avtomatik tozalaydi. Masalan, hacker <script> kodni yashirib yuborsa, tizim uni tozalab tashlaydi. Bu saytingizni virus va ma'lumot o'g'irlashdan himoyalaydi." />
                             </h3>
                             <p style={labelStyle}>Kiruvchi ma&apos;lumotlardan zararli kodlarni tozalash</p>
                         </div>
@@ -316,8 +366,9 @@ export default function SecurityPage() {
                 <div style={{ ...cardStyle, gridColumn: "1 / -1" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
                         <div>
-                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, color: "var(--foreground)", marginTop: 0, marginBottom: 4, display: "flex", alignItems: "center" }}>
                                 📋 Kengaytirilgan Audit Log
+                                <InfoTooltip text="Tizimda kim nima qilganini yozib boradi. Masalan: kim login qildi, kim sozlamani o'zgartirdi, kim arizani o'chirdi. Bu xavfsizlik hodisalarini tekshirishda juda foydali — har bir harakatning izi qoladi." />
                             </h3>
                             <p style={labelStyle}>
                                 Barcha amallar (ariza o&apos;zgarishi, user yaratish/o&apos;chirish, sozlama o&apos;zgarishi) logga yozilsin
