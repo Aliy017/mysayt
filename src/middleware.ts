@@ -16,25 +16,9 @@ export function middleware(req: NextRequest) {
 
     // /api/leads — public (tashqi saytlardan lead qabul qilish)
     // /api/bot/webhook — public (Telegram webhook)
+    // CORS headerlarni route.ts o'zi boshqaradi (getCorsOrigin orqali)
     if (pathname === "/api/leads" || pathname === "/api/bot/webhook") {
-        // OPTIONS = CORS preflight — to'g'ridan-to'g'ri javob
-        if (req.method === "OPTIONS") {
-            return new NextResponse(null, {
-                status: 204,
-                headers: {
-                    "Access-Control-Allow-Origin": "*",
-                    "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-                    "Access-Control-Allow-Headers": "Content-Type",
-                    "Access-Control-Max-Age": "86400",
-                },
-            });
-        }
-        // POST — lead yuborish (CORS headerlar bilan)
-        if (req.method === "POST") {
-            const response = NextResponse.next();
-            response.headers.set("Access-Control-Allow-Origin", "*");
-            return response;
-        }
+        return NextResponse.next();
     }
 
     // NextAuth API — ruxsat berish

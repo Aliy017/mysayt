@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiAuth, canAccessSite } from "@/lib/apiAuth";
+import { clearSiteDomainsCache } from "@/lib/security";
 
 // PATCH /api/sites/[id] — Sayt tahrirlash (FAQAT tegishli sayt)
 export async function PATCH(
@@ -29,6 +30,7 @@ export async function PATCH(
         if (body.googleAdsTag !== undefined) updateData.googleAdsTag = body.googleAdsTag;
 
         await prisma.site.update({ where: { id }, data: updateData });
+        clearSiteDomainsCache(); // CORS yangilash
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Site PATCH xato:", error);
@@ -47,6 +49,7 @@ export async function DELETE(
 
         const { id } = await params;
         await prisma.site.delete({ where: { id } });
+        clearSiteDomainsCache(); // CORS yangilash
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Site DELETE xato:", error);

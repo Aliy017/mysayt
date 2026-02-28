@@ -201,27 +201,77 @@ export async function logAudit(userId: string, action: string, details?: string,
 }
 
 // ═══════════════ CORS TEKSHIRISH ═══════════════
+
+// Sayt domenlarini keshda saqlash (5 daqiqa)
+let cachedSiteDomains: string[] | null = null;
+let siteDomainsCacheTime = 0;
+
+/**
+ * Barcha faol saytlarning domenlarini olish (kesh bilan)
+ */
+async function getActiveSiteDomains(): Promise<string[]> {
+    const now = Date.now();
+    if (cachedSiteDomains && now - siteDomainsCacheTime < CACHE_TTL) {
+        return cachedSiteDomains;
+    }
+
+    try {
+        const sites = await prisma.site.findMany({
+            where: { isActive: true },
+            select: { domain: true },
+        });
+        cachedSiteDomains = sites.map(s => s.domain.toLowerCase());
+        siteDomainsCacheTime = now;
+        return cachedSiteDomains;
+    } catch {
+        return cachedSiteDomains || [];
+    }
+}
+
+/**
+ * Site domenlar keshini tozalash (sayt qo'shilganda/o'chirilganda)
+ */
+export function clearSiteDomainsCache() {
+    cachedSiteDomains = null;
+    siteDomainsCacheTime = 0;
+}
+
 /**
  * CORS strict mode tekshirish
- * @returns allowed origin yoki "*"
+ * corsStrictMode = false → "*" (hammaga ruxsat)
+ * corsStrictMode = true → faqat:
+ *   1) Qo'lda kiritilgan corsAllowedOrigins
+ *   2) Saytlar bo'limidagi barcha faol domenlar (avtomatik)
+ * @returns allowed origin yoki ""
  */
 export async function getCorsOrigin(requestOrigin: string | null): Promise<string> {
     const settings = await getSecuritySettings();
 
+    // Strict mode o'chirilgan — hammaga ruxsat
     if (!settings.corsStrictMode) return "*";
 
+    // Origin yo'q — ruxsat bermash
     if (!requestOrigin) return "";
 
-    const allowedOrigins = settings.corsAllowedOrigins
+    // 1) Qo'lda kiritilgan domenlar
+    const manualOrigins = settings.corsAllowedOrigins
         .split(",")
         .map(o => o.trim().toLowerCase())
         .filter(Boolean);
 
-    if (allowedOrigins.length === 0) return "*";
+    // 2) Saytlar bo'limidagi faol domenlar (avtomatik)
+    const siteDomains = await getActiveSiteDomains();
+
+    // Hammasini birlashtirish (dublikatlar filter)
+    const allAllowed = [...new Set([...manualOrigins, ...siteDomains])];
+
+    // Agar hech narsa yo'q — hammaga ruxsat
+    if (allAllowed.length === 0) return "*";
 
     const origin = requestOrigin.toLowerCase();
+
     // Domain yoki to'liq URL bo'yicha tekshirish
-    const isAllowed = allowedOrigins.some(allowed =>
+    const isAllowed = allAllowed.some(allowed =>
         origin === allowed ||
         origin === `https://${allowed}` ||
         origin === `http://${allowed}` ||
@@ -230,3 +280,4 @@ export async function getCorsOrigin(requestOrigin: string | null): Promise<strin
 
     return isAllowed ? requestOrigin : "";
 }
+

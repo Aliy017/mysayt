@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { apiAuth } from "@/lib/apiAuth";
+import { clearSiteDomainsCache } from "@/lib/security";
 
 // GET /api/sites — Foydalanuvchiga tegishli saytlar
 export async function GET() {
@@ -63,6 +64,9 @@ export async function POST(req: NextRequest) {
                 data: { userId: authResult.userId!, siteId: site.id },
             });
         }
+
+        // Sayt domenlar keshini tozalash (CORS yangilanishi uchun)
+        clearSiteDomainsCache();
 
         return NextResponse.json({ success: true, id: site.id }, { status: 201 });
     } catch (error) {

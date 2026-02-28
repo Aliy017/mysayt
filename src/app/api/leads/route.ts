@@ -7,7 +7,7 @@ import { checkRateLimit, sanitizeInput, getCorsOrigin } from "@/lib/security";
 async function getCorsHeaders(origin: string | null) {
     const allowedOrigin = await getCorsOrigin(origin);
     return {
-        "Access-Control-Allow-Origin": allowedOrigin || "*",
+        "Access-Control-Allow-Origin": allowedOrigin,
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
     };
