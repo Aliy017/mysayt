@@ -15,9 +15,14 @@ export function middleware(req: NextRequest) {
     }
 
     // /api/leads — public (tashqi saytlardan lead qabul qilish)
+    // /api/site-config — public (sayt konfiguratsiyasi)
     // /api/bot/webhook — public (Telegram webhook)
     // CORS headerlarni route.ts o'zi boshqaradi (getCorsOrigin orqali)
-    if (pathname === "/api/leads" || pathname === "/api/bot/webhook") {
+    if (
+        pathname === "/api/leads" ||
+        pathname === "/api/site-config" ||
+        pathname === "/api/bot/webhook"
+    ) {
         return NextResponse.next();
     }
 
